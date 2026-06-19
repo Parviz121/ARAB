@@ -1,0 +1,1054 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FlashCards — Учи умнее</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Scheherazade+New:wght@400;700&family=Noto+Naskh+Arabic:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  .arabic {
+    font-family: 'Scheherazade New', 'Noto Naskh Arabic', 'Traditional Arabic', serif;
+    font-size: 1.5em;
+    direction: rtl;
+    line-height: 2;
+    letter-spacing: 0;
+  }
+  .card-text.arabic { font-size: 32px; line-height: 2.2; }
+  .card-row .front.arabic { font-size: 20px; line-height: 2; }
+  .card-row .back { direction: ltr; }
+  :root {
+    --bg: #0f0f13;
+    --surface: #1a1a24;
+    --surface2: #22222f;
+    --border: #2e2e40;
+    --accent: #6c63ff;
+    --accent2: #a78bfa;
+    --green: #22c55e;
+    --red: #ef4444;
+    --yellow: #f59e0b;
+    --text: #e2e8f0;
+    --text2: #94a3b8;
+    --radius: 14px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; min-height: 100vh; }
+
+  /* Layout */
+  .app { display: flex; flex-direction: column; min-height: 100vh; }
+  .header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 24px; height: 60px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
+  .logo { font-size: 20px; font-weight: 700; color: var(--accent2); cursor: pointer; display: flex; align-items: center; gap: 8px; }
+  .logo span { font-size: 22px; }
+  .nav { display: flex; gap: 4px; }
+  .nav-btn { background: none; border: none; color: var(--text2); cursor: pointer; padding: 8px 14px; border-radius: 8px; font-size: 14px; transition: all .2s; }
+  .nav-btn:hover, .nav-btn.active { background: var(--surface2); color: var(--text); }
+  .main { flex: 1; max-width: 900px; margin: 0 auto; width: 100%; padding: 32px 24px; }
+
+  /* Buttons */
+  .btn { border: none; border-radius: 10px; cursor: pointer; font-size: 14px; font-weight: 600; padding: 10px 20px; transition: all .2s; display: inline-flex; align-items: center; gap: 8px; }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:hover { background: #5b52e0; transform: translateY(-1px); }
+  .btn-success { background: var(--green); color: #fff; }
+  .btn-success:hover { background: #16a34a; }
+  .btn-danger { background: var(--red); color: #fff; }
+  .btn-danger:hover { background: #dc2626; }
+  .btn-ghost { background: var(--surface2); color: var(--text2); border: 1px solid var(--border); }
+  .btn-ghost:hover { color: var(--text); border-color: var(--accent); }
+  .btn-sm { padding: 6px 14px; font-size: 13px; }
+  .btn-lg { padding: 14px 28px; font-size: 16px; }
+
+  /* Cards / Decks */
+  .decks-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; margin-top: 24px; }
+  .deck-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; cursor: pointer; transition: all .2s; position: relative; }
+  .deck-card:hover { border-color: var(--accent); transform: translateY(-2px); box-shadow: 0 8px 30px rgba(108,99,255,.15); }
+  .deck-card h3 { font-size: 17px; margin-bottom: 6px; }
+  .deck-card p { color: var(--text2); font-size: 13px; }
+  .deck-meta { display: flex; gap: 12px; margin-top: 14px; font-size: 12px; color: var(--text2); }
+  .badge { background: var(--surface2); padding: 3px 10px; border-radius: 20px; }
+  .badge.due { background: rgba(239,68,68,.15); color: #fca5a5; }
+  .deck-actions { position: absolute; top: 14px; right: 14px; display: flex; gap: 6px; opacity: 0; transition: opacity .2s; }
+  .deck-card:hover .deck-actions { opacity: 1; }
+  .icon-btn { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 14px; transition: all .2s; }
+  .icon-btn:hover { border-color: var(--accent); }
+
+  /* Section headers */
+  .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+  .section-title { font-size: 24px; font-weight: 700; }
+  .section-sub { color: var(--text2); font-size: 14px; margin-top: 4px; }
+
+  /* Modal */
+  .overlay { position: fixed; inset: 0; background: rgba(0,0,0,.6); backdrop-filter: blur(4px); z-index: 200; display: flex; align-items: center; justify-content: center; padding: 16px; }
+  .modal { background: var(--surface); border: 1px solid var(--border); border-radius: 18px; padding: 28px; width: 100%; max-width: 480px; }
+  .modal h2 { font-size: 20px; margin-bottom: 20px; }
+  .field { margin-bottom: 16px; }
+  .field label { display: block; font-size: 13px; color: var(--text2); margin-bottom: 6px; }
+  .field input, .field textarea { width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-size: 15px; padding: 10px 14px; outline: none; transition: border-color .2s; font-family: inherit; }
+  .field input:focus, .field textarea:focus { border-color: var(--accent); }
+  .field textarea { resize: vertical; min-height: 80px; }
+  .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; }
+
+  /* Flashcard study */
+  .study-header { display: flex; align-items: center; gap: 16px; margin-bottom: 28px; }
+  .study-progress { flex: 1; }
+  .progress-bar-wrap { height: 6px; background: var(--surface2); border-radius: 3px; margin-top: 8px; }
+  .progress-bar { height: 100%; background: var(--accent); border-radius: 3px; transition: width .4s; }
+  .progress-text { font-size: 13px; color: var(--text2); }
+
+  .card-scene { perspective: 1000px; width: 100%; max-width: 600px; margin: 0 auto 32px; height: 300px; cursor: pointer; }
+  .card-3d { width: 100%; height: 100%; transform-style: preserve-3d; transition: transform .6s cubic-bezier(.4,0,.2,1); position: relative; }
+  .card-3d.flipped { transform: rotateY(180deg); }
+  .card-face { position: absolute; inset: 0; backface-visibility: hidden; border-radius: 20px; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 32px; text-align: center; border: 1px solid var(--border); }
+  .card-front { background: linear-gradient(135deg, #1a1a2e, #16213e); }
+  .card-back { background: linear-gradient(135deg, #0d1b2a, #1b2838); transform: rotateY(180deg); }
+  .card-label { font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--text2); margin-bottom: 16px; }
+  .card-text { font-size: 22px; font-weight: 600; line-height: 1.4; }
+  .card-hint { font-size: 13px; color: var(--text2); margin-top: 16px; }
+
+  .rating-btns { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+  .rating-btn { flex: 1; min-width: 100px; max-width: 160px; padding: 12px 8px; border-radius: 12px; border: none; cursor: pointer; font-size: 14px; font-weight: 600; transition: all .2s; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+  .rating-btn .interval { font-size: 11px; font-weight: 400; opacity: .7; }
+  .rating-btn:hover { transform: translateY(-2px); }
+  .btn-again { background: rgba(239,68,68,.2); color: #fca5a5; border: 1px solid rgba(239,68,68,.3); }
+  .btn-again:hover { background: rgba(239,68,68,.35); }
+  .btn-hard { background: rgba(245,158,11,.2); color: #fcd34d; border: 1px solid rgba(245,158,11,.3); }
+  .btn-hard:hover { background: rgba(245,158,11,.35); }
+  .btn-good { background: rgba(34,197,94,.2); color: #86efac; border: 1px solid rgba(34,197,94,.3); }
+  .btn-good:hover { background: rgba(34,197,94,.35); }
+  .btn-easy { background: rgba(108,99,255,.2); color: var(--accent2); border: 1px solid rgba(108,99,255,.3); }
+  .btn-easy:hover { background: rgba(108,99,255,.35); }
+
+  /* Quiz mode */
+  .quiz-question { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 32px; text-align: center; margin-bottom: 24px; }
+  .quiz-question h2 { font-size: 20px; line-height: 1.5; }
+  .quiz-options { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .quiz-opt { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px 20px; cursor: pointer; font-size: 15px; text-align: left; transition: all .2s; color: var(--text); }
+  .quiz-opt:hover:not(.answered) { border-color: var(--accent); background: var(--surface2); }
+  .quiz-opt.correct { border-color: var(--green); background: rgba(34,197,94,.1); color: #86efac; }
+  .quiz-opt.wrong { border-color: var(--red); background: rgba(239,68,68,.1); color: #fca5a5; }
+
+  /* Stats */
+  .stats-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 16px; margin-bottom: 28px; }
+  .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; }
+  .stat-num { font-size: 32px; font-weight: 700; color: var(--accent2); }
+  .stat-label { font-size: 13px; color: var(--text2); margin-top: 4px; }
+  .heatmap { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 16px; }
+  .heat-cell { width: 14px; height: 14px; border-radius: 3px; background: var(--surface2); }
+  .heat-cell.l1 { background: rgba(108,99,255,.3); }
+  .heat-cell.l2 { background: rgba(108,99,255,.55); }
+  .heat-cell.l3 { background: rgba(108,99,255,.8); }
+  .heat-cell.l4 { background: var(--accent); }
+
+  /* Deck detail */
+  .cards-list { display: flex; flex-direction: column; gap: 10px; margin-top: 20px; }
+  .card-row { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px 18px; display: flex; align-items: center; gap: 16px; }
+  .card-row .front { flex: 1; font-weight: 500; }
+  .card-row .back { flex: 1; color: var(--text2); font-size: 14px; }
+  .card-row .info { font-size: 12px; color: var(--text2); text-align: right; min-width: 80px; }
+  .card-row-actions { display: flex; gap: 6px; }
+
+  /* Empty state */
+  .empty { text-align: center; padding: 60px 20px; color: var(--text2); }
+  .empty .icon { font-size: 48px; margin-bottom: 16px; }
+  .empty h3 { font-size: 18px; color: var(--text); margin-bottom: 8px; }
+
+  /* Toast */
+  .toast { position: fixed; bottom: 24px; right: 24px; background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; padding: 12px 20px; font-size: 14px; z-index: 999; animation: toastIn .3s ease; }
+  @keyframes toastIn { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+
+  /* Session end */
+  .session-end { text-align: center; padding: 40px 20px; }
+  .session-end .trophy { font-size: 64px; margin-bottom: 16px; }
+  .session-end h2 { font-size: 28px; margin-bottom: 8px; }
+  .session-end p { color: var(--text2); margin-bottom: 28px; }
+  .end-stats { display: flex; gap: 24px; justify-content: center; margin-bottom: 32px; flex-wrap: wrap; }
+  .end-stat { text-align: center; }
+  .end-stat .n { font-size: 36px; font-weight: 700; }
+  .end-stat .l { font-size: 13px; color: var(--text2); }
+
+  .page { display: none; }
+  .page.active { display: block; }
+  .breadcrumb { display: flex; align-items: center; gap: 8px; color: var(--text2); font-size: 14px; margin-bottom: 24px; cursor: pointer; }
+  .breadcrumb:hover { color: var(--text); }
+
+  @media (max-width: 600px) {
+    .quiz-options { grid-template-columns: 1fr; }
+    .card-scene { height: 240px; }
+    .card-text { font-size: 18px; }
+    .rating-btns { gap: 8px; }
+    .rating-btn { min-width: 70px; font-size: 13px; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="header">
+    <div class="logo" onclick="navigate('home')"><span>🧠</span> FlashCards</div>
+    <nav class="nav">
+      <button class="nav-btn active" id="nav-home" onclick="navigate('home')">Колоды</button>
+      <button class="nav-btn" id="nav-stats" onclick="navigate('stats')">Статистика</button>
+    </nav>
+  </header>
+  <main class="main">
+    <!-- Home: decks list -->
+    <div class="page active" id="page-home">
+      <div class="section-header">
+        <div>
+          <div class="section-title">Мои колоды</div>
+          <div class="section-sub" id="home-sub"></div>
+        </div>
+        <button class="btn btn-primary" onclick="openModal('deck')">+ Новая колода</button>
+      </div>
+      <div class="decks-grid" id="decks-grid"></div>
+    </div>
+
+    <!-- Deck detail -->
+    <div class="page" id="page-deck">
+      <div class="breadcrumb" onclick="navigate('home')">← Все колоды</div>
+      <div class="section-header">
+        <div>
+          <div class="section-title" id="deck-title"></div>
+          <div class="section-sub" id="deck-sub"></div>
+        </div>
+        <div style="display:flex;gap:10px">
+          <button class="btn btn-ghost" onclick="openModal('card')">+ Карточка</button>
+          <button class="btn btn-ghost" id="btn-quiz" onclick="startQuiz()">🎯 Тест</button>
+          <button class="btn btn-primary" id="btn-study" onclick="startStudy()">▶ Учить</button>
+        </div>
+      </div>
+      <div class="cards-list" id="cards-list"></div>
+    </div>
+
+    <!-- Study -->
+    <div class="page" id="page-study">
+      <div class="breadcrumb" id="study-back-btn"></div>
+      <div id="study-content"></div>
+    </div>
+
+    <!-- Quiz -->
+    <div class="page" id="page-quiz">
+      <div class="breadcrumb" id="quiz-back-btn"></div>
+      <div id="quiz-content"></div>
+    </div>
+
+    <!-- Stats -->
+    <div class="page" id="page-stats">
+      <div class="section-title" style="margin-bottom:24px">Статистика</div>
+      <div class="stats-grid" id="stats-grid"></div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px">
+        <div style="font-size:15px;font-weight:600;margin-bottom:12px">Активность за 90 дней</div>
+        <div class="heatmap" id="heatmap"></div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- Modals -->
+<div class="overlay" id="modal-deck" style="display:none" onclick="if(event.target===this)closeModal('deck')">
+  <div class="modal">
+    <h2 id="deck-modal-title">Новая колода</h2>
+    <div class="field"><label>Название</label><input id="deck-name-input" placeholder="Английские слова..."></div>
+    <div class="field"><label>Описание (необязательно)</label><input id="deck-desc-input" placeholder="Для чего эта колода?"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('deck')">Отмена</button>
+      <button class="btn btn-primary" onclick="saveDeck()">Сохранить</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="modal-card" style="display:none" onclick="if(event.target===this)closeModal('card')">
+  <div class="modal">
+    <h2 id="card-modal-title">Новая карточка</h2>
+    <div class="field"><label>Вопрос / Лицевая сторона</label><textarea id="card-front-input" placeholder="Что означает...?"></textarea></div>
+    <div class="field"><label>Ответ / Обратная сторона</label><textarea id="card-back-input" placeholder="Это означает..."></textarea></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('card')">Отмена</button>
+      <button class="btn btn-primary" onclick="saveCard()">Сохранить</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── State ───────────────────────────────────────────────────────────────────
+let state = load();
+let currentDeckId = null;
+let studySession = null;
+let quizSession = null;
+let editDeckId = null;
+let editCardId = null;
+
+function load() {
+  try { return JSON.parse(localStorage.getItem('fc_state')) || defaultState(); }
+  catch { return defaultState(); }
+}
+function defaultState() {
+  return { decks: {}, cards: {}, reviews: [], nextId: 1 };
+}
+function save() {
+  localStorage.setItem('fc_state', JSON.stringify(state));
+}
+function uid() { return 'd' + (state.nextId++); }
+
+// ─── SM-2 Algorithm ──────────────────────────────────────────────────────────
+function sm2(card, quality) {
+  // quality: 0=again,1=hard,2=good,3=easy
+  let { easeFactor = 2.5, interval = 0, repetitions = 0 } = card;
+  const q = [1,2,3,4][quality]; // map to SM2 scale roughly
+  if (quality === 0) {
+    repetitions = 0; interval = 1;
+  } else if (quality === 1) {
+    interval = Math.max(1, Math.round(interval * 1.2));
+  } else {
+    if (repetitions === 0) interval = 1;
+    else if (repetitions === 1) interval = 6;
+    else interval = Math.round(interval * easeFactor);
+    repetitions++;
+    easeFactor = Math.max(1.3, easeFactor + 0.1 - (3 - q) * (0.08 + (3 - q) * 0.02));
+    if (quality === 3) interval = Math.round(interval * 1.3);
+  }
+  const due = Date.now() + interval * 86400000;
+  return { easeFactor, interval, repetitions, due };
+}
+function isDue(card) {
+  return !card.due || card.due <= Date.now();
+}
+function nextInterval(card, quality) {
+  const r = sm2({...card}, quality);
+  if (r.interval < 1) return 'сейчас';
+  if (r.interval === 1) return '1 день';
+  if (r.interval < 30) return r.interval + ' дн.';
+  return Math.round(r.interval/30) + ' мес.';
+}
+
+// ─── Navigation ──────────────────────────────────────────────────────────────
+function navigate(page, deckId) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-' + page).classList.add('active');
+  if (['home','stats'].includes(page)) {
+    document.getElementById('nav-' + page)?.classList.add('active');
+  }
+  if (page === 'home') renderHome();
+  if (page === 'deck' && deckId) { currentDeckId = deckId; renderDeck(); }
+  if (page === 'stats') renderStats();
+}
+
+// ─── Home ─────────────────────────────────────────────────────────────────────
+function renderHome() {
+  const decks = Object.values(state.decks);
+  const totalDue = Object.values(state.cards).filter(c => isDue(c)).length;
+  document.getElementById('home-sub').textContent =
+    `${decks.length} колод · ${Object.keys(state.cards).length} карточек · ${totalDue} к повторению`;
+
+  const grid = document.getElementById('decks-grid');
+  if (!decks.length) {
+    grid.innerHTML = `<div class="empty" style="grid-column:1/-1"><div class="icon">📚</div><h3>Нет колод</h3><p>Создайте первую колоду, чтобы начать</p></div>`;
+    return;
+  }
+  grid.innerHTML = decks.map(deck => {
+    const cards = Object.values(state.cards).filter(c => c.deckId === deck.id);
+    const due = cards.filter(c => isDue(c)).length;
+    return `<div class="deck-card" onclick="navigate('deck','${deck.id}')">
+      <div class="deck-actions">
+        <div class="icon-btn" onclick="event.stopPropagation();editDeck('${deck.id}')">✏️</div>
+        <div class="icon-btn" onclick="event.stopPropagation();deleteDeck('${deck.id}')">🗑️</div>
+      </div>
+      <h3>${esc(deck.name)}</h3>
+      <p>${esc(deck.desc || '')}</p>
+      <div class="deck-meta">
+        <span class="badge">${cards.length} карт.</span>
+        ${due ? `<span class="badge due">⏰ ${due} к повт.</span>` : '<span class="badge">✓ Готово</span>'}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ─── Deck Detail ──────────────────────────────────────────────────────────────
+function renderDeck() {
+  const deck = state.decks[currentDeckId];
+  if (!deck) return navigate('home');
+  const cards = Object.values(state.cards).filter(c => c.deckId === currentDeckId);
+  const due = cards.filter(c => isDue(c));
+
+  document.getElementById('deck-title').textContent = deck.name;
+  document.getElementById('deck-sub').textContent = `${cards.length} карточек · ${due.length} к повторению`;
+  document.getElementById('btn-study').disabled = due.length === 0;
+  document.getElementById('btn-quiz').disabled = cards.length < 4;
+
+  const list = document.getElementById('cards-list');
+  if (!cards.length) {
+    list.innerHTML = `<div class="empty"><div class="icon">🃏</div><h3>Нет карточек</h3><p>Добавьте первую карточку</p></div>`;
+    return;
+  }
+  list.innerHTML = cards.map(card => {
+    const dueStr = card.due ? (isDue(card) ? '⏰ К повт.' : '✓ ' + new Date(card.due).toLocaleDateString('ru')) : '⭐ Новая';
+    return `<div class="card-row">
+      <div class="front ${isArabic(card.front)?'arabic':''}">${esc(card.front)}</div>
+      <div class="back">${esc(card.back)}</div>
+      <div class="info">${dueStr}</div>
+      <div class="card-row-actions">
+        <div class="icon-btn" onclick="editCard('${card.id}')">✏️</div>
+        <div class="icon-btn" onclick="deleteCard('${card.id}')">🗑️</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ─── Study Session ────────────────────────────────────────────────────────────
+function startStudy() {
+  const cards = Object.values(state.cards)
+    .filter(c => c.deckId === currentDeckId && isDue(c));
+  if (!cards.length) return toast('Нет карточек к повторению!');
+
+  studySession = { cards: shuffle(cards), index: 0, results: { again:0, hard:0, good:0, easy:0 }, flipped: false };
+  document.getElementById('study-back-btn').innerHTML =
+    `← ${state.decks[currentDeckId].name}`;
+  document.getElementById('study-back-btn').onclick = () => navigate('deck', currentDeckId);
+  navigate('study');
+  renderStudy();
+}
+
+function renderStudy() {
+  const s = studySession;
+  if (s.index >= s.cards.length) { renderStudyEnd(); return; }
+  const card = s.cards[s.index];
+  s.flipped = false;
+
+  const total = s.cards.length;
+  const pct = Math.round((s.index / total) * 100);
+
+  document.getElementById('study-content').innerHTML = `
+    <div class="study-header">
+      <div class="study-progress">
+        <div class="progress-text">${s.index} / ${total}</div>
+        <div class="progress-bar-wrap"><div class="progress-bar" style="width:${pct}%"></div></div>
+      </div>
+    </div>
+    <div class="card-scene" onclick="flipCard()" id="card-scene">
+      <div class="card-3d" id="card-3d">
+        <div class="card-face card-front">
+          <div class="card-label">Вопрос</div>
+          <div class="card-text ${isArabic(card.front)?'arabic':''}">${esc(card.front)}</div>
+          <div class="card-hint">Нажмите, чтобы увидеть ответ</div>
+        </div>
+        <div class="card-face card-back">
+          <div class="card-label">Ответ</div>
+          <div class="card-text ${isArabic(card.back)?'arabic':''}">${esc(card.back)}</div>
+        </div>
+      </div>
+    </div>
+    <div id="rating-area" style="display:none">
+      <p style="text-align:center;color:var(--text2);font-size:14px;margin-bottom:16px">Насколько хорошо вы знали ответ?</p>
+      <div class="rating-btns">
+        <button class="rating-btn btn-again" onclick="rate(0)">
+          Снова<span class="interval">${nextInterval(card,0)}</span>
+        </button>
+        <button class="rating-btn btn-hard" onclick="rate(1)">
+          Сложно<span class="interval">${nextInterval(card,1)}</span>
+        </button>
+        <button class="rating-btn btn-good" onclick="rate(2)">
+          Хорошо<span class="interval">${nextInterval(card,2)}</span>
+        </button>
+        <button class="rating-btn btn-easy" onclick="rate(3)">
+          Легко<span class="interval">${nextInterval(card,3)}</span>
+        </button>
+      </div>
+    </div>`;
+}
+
+function flipCard() {
+  if (studySession.flipped) return;
+  studySession.flipped = true;
+  document.getElementById('card-3d').classList.add('flipped');
+  setTimeout(() => {
+    document.getElementById('rating-area').style.display = 'block';
+  }, 400);
+}
+
+function rate(quality) {
+  const s = studySession;
+  const card = s.cards[s.index];
+  const labels = ['again','hard','good','easy'];
+  s.results[labels[quality]]++;
+
+  const updates = sm2(state.cards[card.id], quality);
+  Object.assign(state.cards[card.id], updates);
+
+  // Log review
+  state.reviews.push({ date: Date.now(), deckId: currentDeckId, quality });
+
+  save();
+  s.index++;
+  renderStudy();
+}
+
+function renderStudyEnd() {
+  const s = studySession;
+  const total = s.cards.length;
+  const correct = s.results.good + s.results.easy;
+  const pct = Math.round((correct / total) * 100);
+
+  document.getElementById('study-content').innerHTML = `
+    <div class="session-end">
+      <div class="trophy">${pct >= 80 ? '🏆' : pct >= 50 ? '💪' : '📖'}</div>
+      <h2>Сессия завершена!</h2>
+      <p>${pct}% правильных ответов</p>
+      <div class="end-stats">
+        <div class="end-stat"><div class="n" style="color:#fca5a5">${s.results.again}</div><div class="l">Снова</div></div>
+        <div class="end-stat"><div class="n" style="color:#fcd34d">${s.results.hard}</div><div class="l">Сложно</div></div>
+        <div class="end-stat"><div class="n" style="color:#86efac">${s.results.good}</div><div class="l">Хорошо</div></div>
+        <div class="end-stat"><div class="n" style="color:var(--accent2)">${s.results.easy}</div><div class="l">Легко</div></div>
+      </div>
+      <div style="display:flex;gap:12px;justify-content:center">
+        <button class="btn btn-ghost btn-lg" onclick="navigate('deck',currentDeckId)">К колоде</button>
+        <button class="btn btn-primary btn-lg" onclick="startStudy()">Ещё раз</button>
+      </div>
+    </div>`;
+}
+
+// ─── Quiz Mode ────────────────────────────────────────────────────────────────
+function startQuiz() {
+  const allCards = Object.values(state.cards).filter(c => c.deckId === currentDeckId);
+  if (allCards.length < 4) return toast('Нужно минимум 4 карточки для теста');
+
+  quizSession = {
+    questions: shuffle(allCards).slice(0, Math.min(20, allCards.length)),
+    index: 0, correct: 0, answered: false
+  };
+  document.getElementById('quiz-back-btn').innerHTML = `← ${state.decks[currentDeckId].name}`;
+  document.getElementById('quiz-back-btn').onclick = () => navigate('deck', currentDeckId);
+  navigate('quiz');
+  renderQuiz();
+}
+
+function renderQuiz() {
+  const q = quizSession;
+  if (q.index >= q.questions.length) { renderQuizEnd(); return; }
+  const card = q.questions[q.index];
+  const allCards = Object.values(state.cards).filter(c => c.deckId === currentDeckId);
+  const wrong = shuffle(allCards.filter(c => c.id !== card.id)).slice(0, 3).map(c => c.back);
+  const options = shuffle([card.back, ...wrong]);
+
+  const total = q.questions.length;
+  const pct = Math.round((q.index / total) * 100);
+
+  document.getElementById('quiz-content').innerHTML = `
+    <div class="study-header">
+      <div class="study-progress">
+        <div class="progress-text">Вопрос ${q.index + 1} / ${total} · ✓ ${q.correct}</div>
+        <div class="progress-bar-wrap"><div class="progress-bar" style="width:${pct}%"></div></div>
+      </div>
+    </div>
+    <div class="quiz-question"><h2>${esc(card.front)}</h2></div>
+    <div class="quiz-options" id="quiz-opts">
+      ${options.map(opt => `<button class="quiz-opt" onclick="answerQuiz('${esc(opt)}','${esc(card.back)}')">${esc(opt)}</button>`).join('')}
+    </div>
+    <div id="quiz-next" style="text-align:center;margin-top:20px;display:none">
+      <button class="btn btn-primary" onclick="nextQuizQuestion()">Следующий →</button>
+    </div>`;
+}
+
+function answerQuiz(chosen, correct) {
+  const q = quizSession;
+  if (q.answered) return;
+  q.answered = true;
+  if (chosen === correct) q.correct++;
+
+  document.querySelectorAll('.quiz-opt').forEach(btn => {
+    btn.classList.add('answered');
+    if (btn.textContent === correct) btn.classList.add('correct');
+    else if (btn.textContent === chosen && chosen !== correct) btn.classList.add('wrong');
+  });
+  document.getElementById('quiz-next').style.display = 'block';
+}
+
+function nextQuizQuestion() {
+  quizSession.index++;
+  quizSession.answered = false;
+  renderQuiz();
+}
+
+function renderQuizEnd() {
+  const q = quizSession;
+  const pct = Math.round((q.correct / q.questions.length) * 100);
+  document.getElementById('quiz-content').innerHTML = `
+    <div class="session-end">
+      <div class="trophy">${pct >= 80 ? '🏆' : pct >= 50 ? '💪' : '📖'}</div>
+      <h2>Тест завершён!</h2>
+      <p>${q.correct} из ${q.questions.length} — ${pct}%</p>
+      <div style="display:flex;gap:12px;justify-content:center;margin-top:24px">
+        <button class="btn btn-ghost btn-lg" onclick="navigate('deck',currentDeckId)">К колоде</button>
+        <button class="btn btn-primary btn-lg" onclick="startQuiz()">Ещё раз</button>
+      </div>
+    </div>`;
+}
+
+// ─── Stats ────────────────────────────────────────────────────────────────────
+function renderStats() {
+  const reviews = state.reviews;
+  const today = startOfDay(Date.now());
+  const todayReviews = reviews.filter(r => r.date >= today);
+  const streak = calcStreak();
+  const total = Object.keys(state.cards).length;
+  const mastered = Object.values(state.cards).filter(c => (c.interval || 0) >= 21).length;
+
+  document.getElementById('stats-grid').innerHTML = `
+    <div class="stat-card"><div class="stat-num">${todayReviews.length}</div><div class="stat-label">Повторено сегодня</div></div>
+    <div class="stat-card"><div class="stat-num">${reviews.length}</div><div class="stat-label">Всего повторений</div></div>
+    <div class="stat-card"><div class="stat-num">${streak}</div><div class="stat-label">Серия дней 🔥</div></div>
+    <div class="stat-card"><div class="stat-num">${mastered}</div><div class="stat-label">Изучено карточек</div></div>
+    <div class="stat-card"><div class="stat-num">${total}</div><div class="stat-label">Всего карточек</div></div>
+    <div class="stat-card"><div class="stat-num">${Object.keys(state.decks).length}</div><div class="stat-label">Колод</div></div>
+  `;
+
+  // Heatmap last 90 days
+  const hm = document.getElementById('heatmap');
+  const cells = [];
+  for (let i = 89; i >= 0; i--) {
+    const d = startOfDay(Date.now() - i * 86400000);
+    const count = reviews.filter(r => startOfDay(r.date) === d).length;
+    const lvl = count === 0 ? 0 : count < 5 ? 1 : count < 15 ? 2 : count < 30 ? 3 : 4;
+    cells.push(`<div class="heat-cell l${lvl}" title="${new Date(d).toLocaleDateString('ru')}: ${count}"></div>`);
+  }
+  hm.innerHTML = cells.join('');
+}
+
+function startOfDay(ts) {
+  const d = new Date(ts);
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+}
+function calcStreak() {
+  let streak = 0, d = startOfDay(Date.now());
+  while (true) {
+    if (state.reviews.some(r => startOfDay(r.date) === d)) { streak++; d -= 86400000; }
+    else break;
+  }
+  return streak;
+}
+
+// ─── CRUD ─────────────────────────────────────────────────────────────────────
+function openModal(type) {
+  if (type === 'deck') {
+    document.getElementById('deck-modal-title').textContent = editDeckId ? 'Изменить колоду' : 'Новая колода';
+    if (editDeckId) {
+      const d = state.decks[editDeckId];
+      document.getElementById('deck-name-input').value = d.name;
+      document.getElementById('deck-desc-input').value = d.desc || '';
+    } else {
+      document.getElementById('deck-name-input').value = '';
+      document.getElementById('deck-desc-input').value = '';
+    }
+  }
+  if (type === 'card') {
+    document.getElementById('card-modal-title').textContent = editCardId ? 'Изменить карточку' : 'Новая карточка';
+    if (editCardId) {
+      const c = state.cards[editCardId];
+      document.getElementById('card-front-input').value = c.front;
+      document.getElementById('card-back-input').value = c.back;
+    } else {
+      document.getElementById('card-front-input').value = '';
+      document.getElementById('card-back-input').value = '';
+    }
+  }
+  document.getElementById('modal-' + type).style.display = 'flex';
+  setTimeout(() => document.getElementById(type === 'deck' ? 'deck-name-input' : 'card-front-input').focus(), 50);
+}
+
+function closeModal(type) {
+  document.getElementById('modal-' + type).style.display = 'none';
+  editDeckId = null; editCardId = null;
+}
+
+function saveDeck() {
+  const name = document.getElementById('deck-name-input').value.trim();
+  if (!name) return toast('Введите название колоды');
+  const desc = document.getElementById('deck-desc-input').value.trim();
+  if (editDeckId) {
+    state.decks[editDeckId].name = name;
+    state.decks[editDeckId].desc = desc;
+  } else {
+    const id = uid();
+    state.decks[id] = { id, name, desc, created: Date.now() };
+  }
+  save(); closeModal('deck'); renderHome();
+}
+
+function saveCard() {
+  const front = document.getElementById('card-front-input').value.trim();
+  const back = document.getElementById('card-back-input').value.trim();
+  if (!front || !back) return toast('Заполните оба поля');
+  if (editCardId) {
+    state.cards[editCardId].front = front;
+    state.cards[editCardId].back = back;
+  } else {
+    const id = uid();
+    state.cards[id] = { id, deckId: currentDeckId, front, back, created: Date.now() };
+  }
+  save(); closeModal('card'); renderDeck();
+}
+
+function editDeck(id) {
+  editDeckId = id; openModal('deck');
+}
+function deleteDeck(id) {
+  if (!confirm('Удалить колоду и все карточки?')) return;
+  delete state.decks[id];
+  Object.keys(state.cards).forEach(cid => { if (state.cards[cid].deckId === id) delete state.cards[cid]; });
+  save(); renderHome();
+}
+function editCard(id) {
+  editCardId = id; openModal('card');
+}
+function deleteCard(id) {
+  if (!confirm('Удалить карточку?')) return;
+  delete state.cards[id];
+  save(); renderDeck();
+}
+
+// ─── Utils ────────────────────────────────────────────────────────────────────
+function isArabic(text) {
+  return /[؀-ۿ]/.test(text);
+}
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function toast(msg) {
+  const t = document.createElement('div');
+  t.className = 'toast'; t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 2500);
+}
+
+// Keyboard shortcuts
+document.addEventListener('keydown', e => {
+  if (document.querySelector('#page-study.active')) {
+    if (e.code === 'Space') { e.preventDefault(); flipCard(); }
+    if (e.key === '1') rate(0);
+    if (e.key === '2') rate(1);
+    if (e.key === '3') rate(2);
+    if (e.key === '4') rate(3);
+  }
+  if (e.key === 'Escape') {
+    closeModal('deck'); closeModal('card');
+  }
+});
+
+// ─── Vocabulary data ──────────────────────────────────────────────────────────
+if (!Object.keys(state.decks).length) {
+  const lessons = [
+    {
+      name: 'Урок 9 — Цвета, одежда, числа',
+      desc: 'Цвета, одежда, числа, продукты, покупки',
+      words: [
+        ['أَحْمَرُ','красный'],['أَخْضَرُ','зелёный'],['أَزْرَقُ','синий'],
+        ['أَسْوَدُ','чёрный'],['أَصْفَرُ','жёлтый'],['أَبْيَضُ','белый'],
+        ['ثَوْبٌ','одежда / платье'],['أَثْوَابٌ','одежды (мн.ч.)'],
+        ['قَمِيصٌ','рубашка'],['قُمُصَانٌ','рубашки (мн.ч.)'],
+        ['اشْتَرَى / يَشْتَرِي','купил / покупать'],
+        ['يَصِلُ','прибывает / достигает'],
+        ['بِكَمْ','за сколько?'],['بَيْضٌ','яйца'],
+        ['ثَلَاثُونَ','тридцать'],['خَمْسُونَ','пятьдесят'],['ثَمَانُونَ','восемьдесят'],
+        ['خِيَارٌ','огурец'],['دَفْتَرٌ','тетрадь'],
+        ['دِينَارٌ','динар (валюта)'],['رِيَالٌ','риял (валюта)'],
+        ['سُكَّرٌ','сахар'],['طَبَقٌ','тарелка'],['طَمَاطِمُ','помидоры'],
+        ['عُلْبَةُ مِلْحٍ','пачка соли'],['مِلْحٌ','соль'],
+        ['بَنٌّ','кофе (молотый)'],['قِسْمٌ','раздел / отдел'],
+        ['لَمْ','не (отрицание прош. вр.)'],
+        ['كِتَابُ قِرَاءَةٍ','книга для чтения'],
+        ['كِتَابُ قَوَاعِدَ','книга грамматики'],
+        ['لَوْ سَمَحْتَ','пожалуйста'],
+        ['امْرَأَةٌ','женщина'],['مَرْحَبًا','привет / добро пожаловать'],
+        ['الْمَطْلُوبُ','требуемое / нужное'],
+        ['مُعْجَمٌ عَرَبِيٌّ','арабский словарь'],['هُنَا','здесь'],
+      ]
+    },
+    {
+      name: 'Урок 10 — Погода и природа',
+      desc: 'Погода, времена года, стороны света, глаголы',
+      words: [
+        ['الْجَوُّ / الطَّقْسُ','погода'],['بَارِدٌ','холодный'],['بَرْدٌ','холод'],
+        ['حَارٌّ','жаркий'],['حَرٌّ','жара'],['دَافِئٌ','тёплый'],
+        ['مُعْتَدِلٌ','умеренный'],['مُبَلَّلٌ','мокрый'],['مُظَلَّلٌ','в тени'],
+        ['دَرَجَةُ الْحَرَارَةِ','температура'],
+        ['صِفْرٌ','ноль'],['تَحْتَ الصِّفْرِ','ниже нуля'],
+        ['صَيْفٌ','лето'],['شِتَاءٌ','зима'],
+        ['فَصْلُ الرَّبِيعِ','весна'],['فَصْلُ الْخَرِيفِ','осень'],
+        ['فَصْلُ الشِّتَاءِ','зима (сезон)'],
+        ['سَمَاءٌ','небо'],['شَاطِئٌ','берег (моря)'],
+        ['سُوقٌ','рынок / базар'],['شَمَالٌ','север'],['يَمِينٌ','правая сторона'],
+        ['أَمَامَ','впереди / перед'],['خَلْفٌ','позади / за'],
+        ['فَوْقَ','над / выше'],['تَحْتَ','под'],
+        ['خَارِجٌ','снаружи'],['فِي الْخَارِجِ','на улице'],
+        ['خَيْمَةٌ','палатка'],['عُطْلَةُ الْأُسْبُوعِ','выходные'],
+        ['غَدًا','завтра'],['لَيْلَةٌ','ночь'],['كَيْفَ؟','как?'],
+        ['أَمْطَرَ / تُمْطِرُ','шёл дождь / идёт дождь'],
+        ['أَحْضَرَ / يُحْضِرُ','принёс / приносить'],
+        ['تَرَكَ / يَتْرُكُ','оставил / оставлять'],
+        ['تَكَلَّمَ / يَتَكَلَّمُ','говорил / говорить'],
+        ['بَقِيَ / يَبْقَى','остался / оставаться'],
+        ['قَضَى / يَقْضِي','провёл время / проводить'],
+        ['بَارَكَ اللهُ فِيكَ','да благословит тебя Аллах'],
+        ['الْبَرُّ','суша'],['خَضَرٌ','зелень / овощи'],
+      ]
+    },
+    {
+      name: 'Урок 11 — Город и путешествия',
+      desc: 'Город, поездки, транспорт, прилагательные',
+      words: [
+        ['مَدِينَةٌ','город'],['قَرْيَةٌ','деревня'],['بَلَدٌ','страна'],
+        ['أَسْوَاقٌ','рынки (мн.ч.)'],['شَرِكَاتٌ','компании (мн.ч.)'],
+        ['أَصْدِقَاءُ','друзья'],['أُسْتَاذٌ','учитель / профессор'],
+        ['مُدِيرٌ','директор'],['قِطَارٌ','поезд'],
+        ['رِحْلَةٌ','поездка / путешествие'],
+        ['جَوَازُ سَفَرٍ','паспорт'],['جِنْسِيَّةٌ','гражданство'],
+        ['بَعِيرٌ','верблюд'],['ازْدِحَامٌ','пробка / толпа'],
+        ['ضَوْضَاءُ','шум'],['هَوَاءٌ','воздух / ветер'],
+        ['نَقِيٌّ','чистый'],['هَادِئٌ','тихий / спокойный'],
+        ['مُشْكِلَةٌ','проблема'],['عُمْرَةٌ','умра (паломничество)'],
+        ['بَيْضَاءُ','белая'],['خَضْرَاءُ','зелёная'],
+        ['زَرْقَاءُ','синяя'],['سَوْدَاءُ','чёрная'],['صَفْرَاءُ','жёلтая'],
+        ['تَزَوَّجَ / يَتَزَوَّجُ','женился / жениться'],
+        ['زَارَ / يَزُورُ','навестил / навещать'],
+        ['انْتَقَلَ / يَنْتَقِلُ','переехал / переезжать'],
+        ['اسْتَغْرَقَ / يَسْتَغْرِقُ','занял (время)'],
+        ['تَلَوَّثَ','загрязнился'],['تَقْرِيبًا','приблизительно'],
+        ['سَنَةٌ / سَنَوَاتٌ','год / годы'],['نِصْفٌ','половина'],
+        ['قَبْلَ','до / перед'],['لَكِنْ','но / однако'],
+        ['لَيْسَ','нет / не является'],['هُنَاكَ','там'],
+        ['مَا رَأْيُكَ؟','что ты думаешь?'],['رَأَى','увидел'],
+        ['سَعِيدًا','с удовольствием'],
+      ]
+    },
+    {
+      name: 'Урок 12 — Хобби и культура',
+      desc: 'Хобби, спорт, учёба, книги, каллиграфия',
+      words: [
+        ['هِوَايَةٌ','хобби'],['رِيَاضَةٌ','спорт'],['سِبَاحَةٌ','плавание'],
+        ['كُرَةُ قَدَمٍ','футбол'],['فَرُوسِيَّةٌ','верховая езда'],
+        ['خَيَاطَةٌ','шитьё'],['تَدْبِيرٌ مَنْزِلِيٌّ','домоводство'],
+        ['جَمْعُ الطَّوَابِعِ','коллекционирование марок'],
+        ['طَابِعٌ / طَوَابِعُ','марка / марки'],['سَفَرٌ','путешествие'],
+        ['قِرَاءَةٌ','чтение'],['الْخَطُّ الْعَرَبِيُّ','арабская каллиграфия'],
+        ['خَطُّ الرُّقْعَةِ','почерк "рукъа"'],['صَحَافَةٌ','журналистика'],
+        ['طِبٌّ','медицина'],['مُرَاسَلَةٌ','переписка'],['مَعْرِضٌ','выставка'],
+        ['مَجَلَّةٌ / مَجَلَّاتٌ','журнал / журналы'],
+        ['صُحُفٌ','газеты (мн.ч.)'],['كُتُبٌ','книги'],
+        ['كُتُبٌ إِسْلَامِيَّةٌ','исламские книги'],['كَلِمَاتٌ','слова'],
+        ['لُغَةٌ / لُغَاتٌ','язык / языки'],
+        ['آيَاتٌ','аяты (стихи Корана)'],
+        ['أَحَادِيثُ','хадисы / разговоры'],
+        ['إِسْلَامِيَّةٌ','исламская'],['عِلْمِيَّةٌ','научная'],
+        ['عَرَبِيٌّ','арабский'],['مُفِيدٌ','полезный'],['قَصِيرٌ','короткий'],
+        ['جَمِيعٌ','все / весь'],['جَنَاحٌ','павильон / отдел'],
+        ['تِلْكَ','та (указательное мест.)'],['أَهْوَى','я люблю / предпочитаю'],
+        ['رِجَالٌ','мужчины'],
+      ]
+    },
+    {
+      name: 'Урок 13 — Путешествие и аэропорт',
+      desc: 'Аэропорт, визы, транспорт, стороны света',
+      words: [
+        ['أسابيع','недели (мн.ч.)'],
+        ['أقام / يقيم','остановился / останавливаться'],
+        ['إقامة طيّبة','приятного пребывания'],
+        ['بنت','девочка / дочь'],
+        ['تأشيرة خروج','выездная виза'],
+        ['تأشيرة دخول','въездная виза'],
+        ['تأكيد','подтверждение'],
+        ['حجز','бронирование'],
+        ['تذاكر','билеты (мн.ч.)'],
+        ['تذكرة','билет'],
+        ['جنوب','юг'],
+        ['حقيبة','чемодан / сумка'],
+        ['خطوط طيران','авиалинии'],
+        ['رحلة سعيدة','счастливого пути'],
+        ['زيارة','визит / посещение'],
+        ['شرق','восток'],
+        ['شمال','север'],
+        ['ضابط','офицер / сотрудник'],
+        ['عمرة مقبولة','да примется умра'],
+        ['غادر / يغادر','уехал / уезжать'],
+        ['غرب','запад'],
+        ['فتح / يفتّح','открыл / открывать'],
+        ['فقد / يفقد','потерял / терять'],
+        ['فندق','гостиница / отель'],
+        ['قادم','прибывающий / следующий'],
+        ['لون','цвет'],
+        ['موظف','сотрудник / служащий'],
+      ]
+    },
+    {
+      name: 'Урок 14 — Хадж и обряды',
+      desc: 'Числа 11–19, обряды хаджа, религиозная лексика',
+      words: [
+        ['أحد عشر','одиннадцать'],
+        ['اثنا عشر','двенадцать'],
+        ['ثلاثة عشر','тринадцать'],
+        ['أربعة عشر','четырнадцать'],
+        ['خمسة عشر','пятнадцать'],
+        ['ستة عشر','шестнадцать'],
+        ['سبعة عشر','семнадцать'],
+        ['ثمانية عشر','восемнадцать'],
+        ['تسعة عشر','девятнадцать'],
+        ['أشواط','круги обхода (мн.ч.)'],
+        ['اعتمر / يعتمر','совершил умру / совершать умру'],
+        ['ثوب الإحرام','одеяние ихрама'],
+        ['الجمرة الكبرى','большой джамарат'],
+        ['حلق / يحلق','побрил голову / брить'],
+        ['خلع / يخلع','снял одежду / снимать'],
+        ['ذبح / يذبح','зарезал жертву / резать'],
+        ['رأس','голова'],
+        ['رؤوس','головы (мн.ч.)'],
+        ['رجل','нога'],
+        ['رمى / يرمي','бросил / бросать (камни)'],
+        ['الزوال','полдень (зенит солнца)'],
+        ['سرور','радость'],
+        ['سعى / يسعى','совершил сай / совершать сай'],
+        ['سعي الحج','сай хаджа (Сафа–Марва)'],
+        ['شروق الشمس','восход солнца'],
+        ['شعر / يشعر','почувствовал / чувствовать'],
+        ['الشمس','солнце'],
+        ['شوط','один круг обхода'],
+        ['صام / يصوم','постился / поститься'],
+        ['الصفا','Сафа (холм)'],
+        ['طاف / يطوف','совершил таваф'],
+        ['طواف الإفاضة','таваф аль-ифада'],
+        ['طواف الوداع','прощальный таваф'],
+        ['عرفة / عرفات','Арафат'],
+        ['غروب الشمس','закат солнца'],
+        ['الكعبة','Кааба'],
+        ['لبس / يلبس','надел / надевать'],
+        ['لبّى / يلبّي','произнёс тальбию'],
+        ['المروة','Марва (холм)'],
+        ['مزدلفة','Муздалифа'],
+        ['مقام إبراهيم','макам Ибрахима'],
+        ['منى','Мина'],
+        ['الميقات','микат (место ихрама)'],
+        ['هدي','жертвенное животное'],
+        ['وقوف','стояние (на Арафате)'],
+      ]
+    },
+    {
+      name: 'Урок 15 — Здоровье и медицина',
+      desc: 'Тело, болезни, врачи, числа до 100',
+      words: [
+        ['أذن','ухо'],
+        ['أربعون','сорок'],
+        ['عشرون','двадцать'],
+        ['سبعون','семьдесят'],
+        ['تسعون','девяносто'],
+        ['ألف','тысяча'],
+        ['ارتفع / ارتفاع','повысился / повышение'],
+        ['إسعاف','скорая помощь'],
+        ['أسنان','зубы (мн.ч.)'],
+        ['أصاب / يصيب','поразил / поражать'],
+        ['ألم','боль'],
+        ['أنف','нос'],
+        ['تغيّب / يتغيّب','отсутствовал / отсутствовать'],
+        ['تناول','принял (лекарство)'],
+        ['تقرير طبي','медицинская справка'],
+        ['حنجرة','горло / гортань'],
+        ['خضراوات','овощи'],
+        ['دواء','лекарство'],
+        ['راحة','отдых / покой'],
+        ['زكام','насморк / простуда'],
+        ['زيادة الوزن','избыточный вес'],
+        ['سبب','причина'],
+        ['سكري','диабет'],
+        ['سكريات','сахара / сладкое'],
+        ['السلام عليكم ورحمة الله وبركاته','мир вам и милость Аллаха и Его благословение'],
+        ['وعليكم السلام ورحمة الله وبركاته','и вам мир и милость Аллаха'],
+        ['شفاك الله','да исцелит тебя Аллах'],
+        ['شديد','сильный / тяжёлый'],
+        ['صدر','грудь'],
+        ['صداع','головная боль'],
+        ['ضغط','давление'],
+        ['طبيب أسنان','зубной врач'],
+        ['طبيب أنف وأذن وحنجرة','врач ЛОР'],
+        ['فحص / يفحص','осмотрел / осматривать'],
+        ['فواكه','фрукты'],
+        ['قابل / يقابل','встретил / встречать'],
+        ['قاس / يقيس','измерил / измерять'],
+        ['قلب','сердце'],
+        ['كلية','почка'],
+        ['ممارسة','практика / занятие'],
+        ['موعد','приём / назначение'],
+        ['نتيجة','результат'],
+        ['نصح / ينصح','посоветовал / советовать'],
+      ]
+    },
+    {
+      name: 'Урок 16 — Религия и исламский календарь',
+      desc: 'Месяцы хиджры, праздники, природа, общая лексика',
+      words: [
+        ['محرّم','Мухаррам (1-й месяц)'],
+        ['صفر','Сафар (2-й месяц)'],
+        ['ربيع الأول','Раби аль-Авваль (3-й месяц)'],
+        ['ربيع الآخر','Раби аль-Ахир (4-й месяц)'],
+        ['جمادى الأولى','Джумада аль-Уля (5-й месяц)'],
+        ['جمادى الآخرة','Джумада аль-Ахира (6-й месяц)'],
+        ['رجب','Раджаб (7-й месяц)'],
+        ['شوال','Шавваль (10-й месяц)'],
+        ['ذو القعدة','Зуль-Када (11-й месяц)'],
+        ['ذو الحجة','Зуль-Хиджа (12-й месяц)'],
+        ['عيد الأضحى','Ид аль-Адха (праздник жертвоприношения)'],
+        ['عيد الفطر','Ид аль-Фитр (праздник разговения)'],
+        ['صلاة العيد','праздничная молитва'],
+        ['يوم عيد','день праздника'],
+        ['زكاة الفطر','закят аль-фитр'],
+        ['أضحية','жертвенное животное (курбан)'],
+        ['حجّ / يحجّ','совершил хадж / совершать хадж'],
+        ['أبناء','сыновья / дети'],
+        ['الإسلام','ислам'],
+        ['أعطى / يعطي','дал / давать'],
+        ['اقترب / يقترب','приблизился / приближаться'],
+        ['أهل','семья / народ'],
+        ['جبال','горы (мн.ч.)'],
+        ['جوّال','мобильный телефон'],
+        ['حلّة','торжественная одежда / костюм'],
+        ['رأى / يرى','увидел / видеть'],
+        ['رخيص','дешёвый'],
+        ['غالٍ','дорогой (по цене)'],
+        ['ساعد / يساعد','помог / помогать'],
+        ['سافر / يسافر','путешествовал / путешествовать'],
+        ['شخص','человек / личность'],
+        ['عاصمة','столица'],
+        ['عطلة الصيف','летние каникулы'],
+        ['عطلة سعيدة','счастливых каникул'],
+        ['فريق','команда'],
+        ['فقراء','бедные (мн.ч.)'],
+        ['قال / يقول','сказал / говорить'],
+        ['إذن','значит / итак'],
+        ['مزرعة','ферма'],
+        ['مكان','место'],
+        ['مكتبات','библиотеки / книжные магазины'],
+        ['مواقف','стоянки / парковки'],
+        ['نهر','река'],
+      ]
+    },
+  ];
+
+  lessons.forEach(lesson => {
+    const deckId = uid();
+    state.decks[deckId] = { id: deckId, name: lesson.name, desc: lesson.desc, created: Date.now() };
+    lesson.words.forEach(([front, back]) => {
+      const id = uid();
+      state.cards[id] = { id, deckId, front, back, created: Date.now() };
+    });
+  });
+  save();
+}
+
+// Init
+renderHome();
+</script>
+</body>
+</html>
